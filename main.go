@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"path"
 	"time"
 
@@ -27,8 +28,8 @@ func main() {
 }
 
 func onReady() {
-	quit = make(chan bool)
-	done = make(chan bool)
+	done = make(chan bool, 1)
+	quit = make(chan bool, 1)
 
 	systray.SetIcon(icon.Data)
 	systray.SetTooltip("Time left until the end of the work day")
@@ -90,6 +91,12 @@ func updateTimeLeftMenuItem(item *systray.MenuItem, t time.Time, end time.Time) 
 
 func onExit() {
 	// clean up here
+	fmt.Println("Exiting...")
 	done <- true
+	close(done)
+	fmt.Println("Waiting for goroutines to finish...")
 	quit <- true
+	close(quit)
+	fmt.Println("Bye!")
+	os.Exit(0)
 }
