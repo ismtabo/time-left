@@ -15,6 +15,7 @@ import (
 var conf config.Config
 var rest bool
 var done chan bool
+var quit chan bool
 
 func main() {
 	defaultConfPath := path.Join(xdg.ConfigHome, "time-left", "config.yaml")
@@ -26,6 +27,7 @@ func main() {
 }
 
 func onReady() {
+	quit = make(chan bool)
 	done = make(chan bool)
 
 	systray.SetIcon(icon.Data)
@@ -40,10 +42,10 @@ func onReady() {
 	go func() {
 		for {
 			select {
-			case <-done:
+			case <-quit:
 				return
 			case <-mQuit.ClickedCh:
-				quit()
+				systray.Quit()
 			case <-mRest.ClickedCh:
 				rest = !rest
 				if rest {
@@ -89,8 +91,5 @@ func updateTimeLeftMenuItem(item *systray.MenuItem, t time.Time, end time.Time) 
 func onExit() {
 	// clean up here
 	done <- true
-}
-
-func quit() {
-	systray.Quit()
+	quit <- true
 }
