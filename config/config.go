@@ -30,12 +30,18 @@ type Config interface {
 	GetWorkDayEnd(rest bool) time.Time
 	// Get work day duration as duration
 	GetWorkDayDuration() time.Duration
+	// Get refresh interval
+	GetRefreshInterval() time.Duration
+	// Get truncate duration
+	GetTruncateDuration() time.Duration
 }
 
 type config struct {
-	WorkDayStart    string        `yaml:"start"`
-	WorkDayDuration time.Duration `yaml:"duration"`
-	RestDuration    time.Duration `yaml:"rest"`
+	WorkDayStart     string        `yaml:"start"`
+	WorkDayDuration  time.Duration `yaml:"duration"`
+	RestDuration     time.Duration `yaml:"rest"`
+	RefreshInterval  time.Duration `yaml:"refresh,omitempty"`
+	TruncateInterval time.Duration `yaml:"truncate,omitempty"`
 }
 
 func (c *config) GetWorkDayStart() time.Time {
@@ -56,6 +62,20 @@ func (c *config) GetWorkDayEnd(rest bool) time.Time {
 
 func (c *config) GetWorkDayDuration() time.Duration {
 	return c.WorkDayDuration
+}
+
+func (c *config) GetRefreshInterval() time.Duration {
+	if c.RefreshInterval == 0 {
+		return 30 * time.Second
+	}
+	return c.RefreshInterval
+}
+
+func (c *config) GetTruncateDuration() time.Duration {
+	if c.TruncateInterval == 0 {
+		return 1 * time.Minute
+	}
+	return c.TruncateInterval
 }
 
 func (c *config) String() string {

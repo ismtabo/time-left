@@ -40,8 +40,10 @@ func onReady() {
 	go func() {
 		for {
 			select {
+			case <-done:
+				return
 			case <-mQuit.ClickedCh:
-				systray.Quit()
+				quit()
 			case <-mRest.ClickedCh:
 				rest = !rest
 				if rest {
@@ -49,7 +51,9 @@ func onReady() {
 				} else {
 					mRest.SetTitle("Rest: disabled")
 				}
-				updateTimeLeftMenuItem(mTimeLeft, conf.GetWorkDayEnd(rest))
+				if updateTimeLeftMenuItem(mTimeLeft, time.Now(), conf.GetWorkDayEnd(rest)) {
+					done <- true
+				}
 			}
 		}
 	}()
@@ -59,33 +63,34 @@ func onReady() {
 			select {
 			case <-done:
 				return
-			case t := <-time.Tick(1 * time.Minute):
-				if t.After(conf.GetWorkDayEnd(rest)) {
-					mTimeLeft.SetTitle("Time Left: none. See you tomorrow!")
+			case t := <-time.Tick(conf.GetRefreshInterval()):
+				if updateTimeLeftMenuItem(mTimeLeft, t, conf.GetWorkDayEnd(rest)) {
 					done <- true
-					continue
 				}
-				updateTimeLeftMenuItem(mTimeLeft, conf.GetWorkDayEnd(rest))
 			}
 		}
 	}()
 
-	updateTimeLeftMenuItem(mTimeLeft, conf.GetWorkDayEnd(rest))
+	if updateTimeLeftMenuItem(mTimeLeft, time.Now(), conf.GetWorkDayEnd(rest)) {
+		done <- true
+	}
 }
 
-func updateTimeLeftMenuItem(item *systray.MenuItem, end time.Time) {
+func updateTimeLeftMenuItem(item *systray.MenuItem, t time.Time, end time.Time) bool {
+	if t.After(conf.GetWorkDayEnd(rest)) {
+		item.SetTitle("Time Left: none. See you tomorrow!")
+		return true
+	}
 	timeLeft := time.Until(end)
-	timeLeftString := ""
-	if timeLeft.Hours() > 0 {
-		timeLeftString += fmt.Sprintf("%dh", int(timeLeft.Hours()))
-	}
-	if timeLeft.Minutes() > 0 {
-		timeLeftString += fmt.Sprintf("%dm", int(timeLeft.Minutes())%60)
-	}
-	item.SetTitle(fmt.Sprintf("Time Left: %s", timeLeftString))
+	item.SetTitle(fmt.Sprintf("Time Left: %s", timeLeft.Truncate(conf.GetTruncateDuration()).String()))
+	return false
 }
 
 func onExit() {
 	// clean up here
 	done <- true
+}
+
+func quit() {
+	systray.Quit()
 }
