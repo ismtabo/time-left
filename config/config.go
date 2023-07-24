@@ -8,6 +8,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Automatically set at build time
+var (
+	Version   string
+	BuildTime string
+	OS        string
+)
+
 type Duration time.Duration
 
 func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
@@ -24,6 +31,10 @@ func (d Duration) String() string {
 }
 
 type Config interface {
+	// Reload config
+	Reload() error
+	// Version string
+	Version() string
 	// Get work day start time
 	GetWorkDayStart() time.Time
 	// Get work day end time
@@ -37,11 +48,38 @@ type Config interface {
 }
 
 type config struct {
+	path             string
 	WorkDayStart     string        `yaml:"start"`
 	WorkDayDuration  time.Duration `yaml:"duration"`
 	RestDuration     time.Duration `yaml:"rest"`
 	RefreshInterval  time.Duration `yaml:"refresh,omitempty"`
 	TruncateInterval time.Duration `yaml:"truncate,omitempty"`
+}
+
+func NewConfig(path string) Config {
+	config := &config{
+		path: path,
+	}
+	if err := config.Reload(); err != nil {
+		panic(err)
+	}
+	return config
+}
+
+func (c *config) Reload() error {
+	data, err := os.ReadFile(c.path)
+	if err != nil {
+		return err
+	}
+	err = yaml.Unmarshal(data, c)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *config) Version() string {
+	return Version
 }
 
 func (c *config) GetWorkDayStart() time.Time {
@@ -83,17 +121,4 @@ func (c *config) String() string {
 		", workDayStart='" + c.WorkDayStart + "'" +
 		", workDayDuration=" + c.WorkDayDuration.String() +
 		"}"
-}
-
-func NewConfig(path string) Config {
-	config := &config{}
-	data, error := os.ReadFile(path)
-	if error != nil {
-		panic(error)
-	}
-	error = yaml.Unmarshal(data, config)
-	if error != nil {
-		panic(error)
-	}
-	return config
 }

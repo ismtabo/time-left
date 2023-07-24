@@ -18,6 +18,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ### Security
 
+## [1.1.0] - (2023-07-24)
+
+### Added
+
+*   feat: added end of time day to tray icon
+*   feat: added functionality to reload configuration and timer
+*   feat: added icons to menu items
+
 ## [1.0.2] - (2023-07-20)
 
 ### Fixed
