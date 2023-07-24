@@ -11,6 +11,7 @@ else
 	DETECTED_OS := $(shell sh -c 'uname 2>/dev/null || echo Unknown' | tr '[:upper:]' '[:lower:]')
 endif
 OS?=${DETECTED_OS}
+CHANGELOG=CHANGELOG.md
 
 os=$(subst ${TARGET_DIR}/${BINARY_NAME}_,,$@)
 date=$(shell date -u --iso-8601=minutes)
@@ -38,6 +39,7 @@ help:
 	@echo "  dep           Download dependencies"
 	@echo "  vet           Run go vet"
 	@echo "  lint          Run golangci-lint"
+	@echo "  release       Create a new release"
 
 .PHONY: build
 build: $(OUTPUTS)
@@ -75,3 +77,8 @@ vet:
 .PHONY: lint
 lint:
 	golangci-lint run --enable-all
+
+.PHONY: release
+release: build
+	@echo "Creating release ${VERSION}..."
+	gh release create ${VERSION} -F ${CHANGELOG} ${TARGET_DIR}/*
