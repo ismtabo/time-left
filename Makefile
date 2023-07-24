@@ -1,7 +1,7 @@
 PACKAGE=github.com/ismtabo/time-left
 BINARY_NAME=time-left
 TARGET_DIR=target
-VERSION?=$(shell git describe --tags --always --dirty)
+VERSION?=$(shell git describe --tags --match "*.*.*" --candidates 1)
 ARCH=amd64
 OUTPUTS=$(foreach os,${OS},${TARGET_DIR}/${BINARY_NAME}_${os})
 GO_FILES=$(shell find . -type f -name '*.go' -and -not -path "./vendor/*" -and -not -name main.go)
