@@ -62,7 +62,12 @@ go.work
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,go,dotenv,data
 
-
 ### Target ###
 # Ignore build output, except on deploy
 target/
+
+### Taskfile ###
+# Ignore Taskfile cache
+.task/
+Taskfile.yml
+Taskfile.yaml
