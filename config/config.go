@@ -8,13 +8,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Automatically set at build time
-var (
-	Version   string
-	BuildTime string
-	OS        string
-)
-
 type Duration time.Duration
 
 func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
@@ -33,8 +26,6 @@ func (d Duration) String() string {
 type Config interface {
 	// Reload config
 	Reload() error
-	// Version string
-	Version() string
 	// Get work day start time
 	GetWorkDayStart() time.Time
 	// Get work day end time
@@ -78,10 +69,6 @@ func (c *config) Reload() error {
 	return nil
 }
 
-func (c *config) Version() string {
-	return Version
-}
-
 func (c *config) GetWorkDayStart() time.Time {
 	startHour, err := time.Parse("15:04", c.WorkDayStart)
 	if err != nil {
@@ -118,7 +105,7 @@ func (c *config) GetTruncateDuration() time.Duration {
 
 func (c *config) String() string {
 	return "Config{" +
-		", workDayStart='" + c.WorkDayStart + "'" +
-		", workDayDuration=" + c.WorkDayDuration.String() +
+		"workDayStart='" + c.WorkDayStart + "'" +
+		", workDayDuration='" + c.WorkDayDuration.String() + "'" +
 		"}"
 }

@@ -7,6 +7,7 @@ import createVersionChangelog from "./commands/create-version-changelog.mjs";
 import getVersionChangelog from "./commands/get-version-changelog.mjs";
 
 caporal.program
+  .option("--changelog <changelog>", "Changelog file path", { default: "CHANGELOG.md", global: true })
   .command(
     "get",
     dedent`Get changelog from version <version>.

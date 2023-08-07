@@ -18,6 +18,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ### Security
 
+## [1.1.1] - (2023-08-07)
+
+### Fixed
+
+*   fix: mend `-version` flag, now it shows the version
+
 ## [1.1.0] - (2023-07-24)
 
 ### Added

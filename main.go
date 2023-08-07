@@ -33,12 +33,21 @@ var (
 func main() {
 	defaultConfPath := path.Join(xdg.ConfigHome, "time-left", "config.yaml")
 	var confOpt string
+	version := flag.Bool("version", false, "Print version information")
 	flag.StringVar(&confOpt, "config", defaultConfPath, "Path to the config file")
 	flag.Parse()
 	conf = config.NewConfig(confOpt)
-	log.Printf("Version: %s", config.Version)
-	log.Printf("build.Time: %s", config.BuildTime)
-	log.Printf("build.OS: %s", config.OS)
+	if version != nil && *version {
+		fmt.Printf("Version: %s\n", config.GetVersion())
+		fmt.Printf("Build.Revision: %s\n", config.GetRevision())
+		fmt.Printf("Build.Time: %s\n", config.GetBuildTime())
+		fmt.Printf("Build.OS: %s\n", config.GetOS())
+		return
+	}
+	log.Printf("Version: %s", config.GetVersion())
+	log.Printf("build.Revision: %s", config.GetRevision())
+	log.Printf("build.Time: %s", config.GetBuildTime())
+	log.Printf("build.OS: %s", config.GetOS())
 	log.Printf("Config path: %s", confOpt)
 	log.Println("Starting...")
 	systray.Run(onReady, onExit)
