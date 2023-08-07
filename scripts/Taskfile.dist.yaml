@@ -1,0 +1,27 @@
+version: "3"
+
+vars:
+  CHANGELOG: "{{.ROOT_DIR}}/CHANGELOG.md"
+
+tasks:
+  install:
+    desc: Install dependencies
+    cmds:
+      - pnpm install
+  changelog:get:
+    silent: true
+    desc: Get changelog for version
+    cmds:
+      - pnpm run --silent changelog get {{.VERSION}} --changelog {{.CHANGELOG}} --quiet
+    requires:
+      vars:
+        - VERSION
+    vars:
+      SILENT: true
+  changelog:create:
+    desc: Create changelog for version
+    cmds:
+      - pnpm --silent run changelog create {{.VERSION}} {{.DATE}} --changelog {{.CHANGELOG}} --quiet
+    requires:
+      vars:
+        - VERSION

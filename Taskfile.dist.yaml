@@ -1,0 +1,115 @@
+version: "3"
+
+vars:
+  PACKAGE: github.com/ismtabo/time-left
+  BINARY_NAME: time-left
+  TARGET_DIR: target
+  VERSION:
+    sh: git describe --tags --match "*.*.*" --candidates 1 | sed -e 's/^v//'
+  BUILD:
+    sh: git rev-parse --short HEAD
+  BUILD_TIME: "{{now | date `2006-01-02T15:04+00:00`}}"
+  ARCH: amd64
+  TARGET_OSS: linux
+  OUTPUTS: |
+    {{.TARGET_DIR}}/{{.BINARY_NAME}}-linux-{{.ARCH}}
+    {{.TARGET_DIR}}/{{.BINARY_NAME}}-darwin-{{.ARCH}}
+    {{.TARGET_DIR}}/{{.BINARY_NAME}}-windows-{{.ARCH}}.exe
+  GO_FILES:
+    sh: find . -type f -name '*.go' -not -path "./vendor/*"
+  DETECTED_OS:
+    sh: go env GOOS
+  OS: "{{.DETECTED_OS}}"
+  CHANGELOG: CHANGELOG.md
+  DOCS_FILES: |
+    README.md
+    CHANGELOG.md
+
+includes:
+  scripts:
+    taskfile: scripts/Taskfile.dist.yaml
+    dir: scripts/
+
+tasks:
+  build-target:
+    desc: Build target OS binary
+    cmds:
+      - |
+        GOARCH={{.ARCH}} GOOS={{.TARGET_OS}} go build \
+        -ldflags "-X '{{.PACKAGE}}/config.Version={{.VERSION}}' -X '{{.PACKAGE}}/config.Build={{.BUILD}}' -X '{{.PACKAGE}}/config.BuildTime={{.BUILD_TIME}}' -X '{{.PACKAGE}}/config.OS={{.TARGET_OS}}'" \
+        -o {{.TARGET_DIR}}/{{.BINARY_NAME}}-{{.TARGET_OS}}-{{.ARCH}} \
+        main.go
+    requires:
+      vars:
+        - TARGET_OS
+    sources:
+      - main.go
+      - "*.go"
+      - "**/*.go"
+    generates:
+      - "{{.TARGET_DIR}}/{{.BINARY_NAME}}-{{.TARGET_OS}}-{{.ARCH}}"
+  build:
+    desc: Build targets
+    cmds:
+      - task: build-target
+        for:
+          var: TARGET_OSS
+        vars:
+          TARGET_OS: "{{.ITEM}}"
+    requires:
+      vars:
+        - TARGET_OSS
+  install:
+    desc: Install dependencies
+    cmds:
+      - go mod tidy
+  run:
+    desc: Run the application
+    cmds:
+      - go run main.go {{.CLI_ARGS}}
+    dir: "{{.USER_WORKING_DIR}}"
+  clean:
+    desc: Clean target directory
+    cmds:
+      - go clean
+      - rm -rf {{.TARGET_DIR}}
+    requires:
+      vars:
+        - TARGET_DIR
+  test:
+    desc: Run tests
+    cmds:
+      - go test -v ./...
+  test_coverage:
+    desc: Run tests with coverage
+    cmds:
+      - go test -v -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out
+  dep:
+    desc: Download dependencies
+    cmds:
+      - go mod download
+  fmt:
+    desc: Run go fmt
+    cmds:
+      - go fmt ./...
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run --enable-all
+  release:
+    desc: Create a new release
+    deps:
+      - task: clean
+      - task: build
+    cmds:
+      - gh release create {{.VERSION}} -F {{.CHANGELOG}} {{.TARGET_DIR}}/*
+    requires:
+      vars:
+        - VERSION
+        - CHANGELOG
+        - TARGET_DIR

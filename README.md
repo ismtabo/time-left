@@ -1,4 +1,7 @@
 # Time left ⏲
+
+[![GoDoc](https://godoc.org/github.com/ismtabo/time-left?status.svg)](https://godoc.org/github.com/ismtabo/time-left) [![Go Report Card](https://goreportcard.com/badge/github.com/ismtabo/time-left)](https://goreportcard.com/report/github.com/ismtabo/time-left)
+
 This is a simple countdown timer that can be used to track the time left until the end of the work day.
 
 ![Screenshot](./docs/assets/screenshot.png)
@@ -83,6 +86,7 @@ refresh: 30s
 truncate: 1m
 ```
 
+See [config.yaml](./docs/samples/config.yaml) as an example.
 
 ## Contributing
 
