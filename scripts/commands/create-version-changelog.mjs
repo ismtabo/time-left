@@ -15,11 +15,11 @@ import { visit } from "unist-util-visit";
 
 import { isVersionSection, parseVersionHeader } from "./utils/unist.mjs";
 
-export default async function main({ logger, args }) {
+export default async function main({ logger, args, options }) {
   logger.info(`Updating CHANGELOG.md to version ${args.version} (${args.date})`);
   const version = args.version;
   const date = args.date;
-  const changelog = await read(resolve(process.cwd(), "./CHANGELOG.md"));
+  const changelog = await read(resolve(process.cwd(), options.changelog));
   const newChangelog = await remark()
     .use(remarkGfm)
     .use(remarkCleanUnreleasedEmptySections, logger)

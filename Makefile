@@ -15,11 +15,13 @@ CHANGELOG=CHANGELOG.md
 
 os=$(subst ${TARGET_DIR}/${BINARY_NAME}_,,$@)
 date=$(shell date -u --iso-8601=minutes)
+revision=$(shell git rev-parse HEAD | sed -e 's/^v//')
 $(OUTPUTS): main.go ${GO_FILES}
 	@mkdir -p ${TARGET_DIR}
 	@echo "Building ${BINARY_NAME} for ${GOARCH} ${os}..."
 	GOARCH=${ARCH} GOOS=${os} go build \
 		-ldflags "-X '${PACKAGE}/config.Version=${VERSION}' \
+			-X '${PACKAGE}/config.Revision=${revision}' \
 			-X '${PACKAGE}/config.BuildTime=${date}' \
 			-X '${PACKAGE}/config.OS=${os}'" \
 		-o $@ $<

@@ -17,10 +17,10 @@ const isVersionSectionForSection = function (version) {
   });
 };
 
-export default async function main({ logger, args }) {
+export default async function main({ logger, args, options }) {
   logger.info(`Getting CHANGELOG.md section for ${args.version}`);
   const version = args.version;
-  const changelog = await read(resolve(process.cwd(), "./CHANGELOG.md"));
+  const changelog = await read(resolve(process.cwd(), options.changelog));
   const versionLog = await remark().use(remarkExtractVersionSection, version).process(changelog);
   if (versionLog.messages.length > 0) {
     logger.error(reporter(versionLog.messages));
