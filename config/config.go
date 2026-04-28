@@ -33,14 +33,24 @@ func (d Duration) String() string {
 type Config interface {
 	// Reload config
 	Reload() error
+	// Save config
+	Save() error
 	// Version string
 	Version() string
 	// Get work day start time
 	GetWorkDayStart() time.Time
+	// Set work day start time
+	SetWorkDayStart(start time.Time)
 	// Get work day end time
 	GetWorkDayEnd(rest bool) time.Time
 	// Get work day duration as duration
 	GetWorkDayDuration() time.Duration
+	// Set work day duration
+	SetWorkDayDuration(duration time.Duration)
+	// Get rest duration as duration
+	GetRestDuration() time.Duration
+	// Set rest duration
+	SetRestDuration(duration time.Duration)
 	// Get refresh interval
 	GetRefreshInterval() time.Duration
 	// Get truncate duration
@@ -78,6 +88,14 @@ func (c *config) Reload() error {
 	return nil
 }
 
+func (c *config) Save() error {
+	data, err := yaml.Marshal(c)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(c.path, data, 0644)
+}
+
 func (c *config) Version() string {
 	return Version
 }
@@ -91,6 +109,10 @@ func (c *config) GetWorkDayStart() time.Time {
 	return time.Date(now.Year(), now.Month(), now.Day(), startHour.Hour(), startHour.Minute(), startHour.Second(), startHour.Nanosecond(), now.Location())
 }
 
+func (c *config) SetWorkDayStart(start time.Time) {
+	c.WorkDayStart = start.Format("15:04")
+}
+
 func (c *config) GetWorkDayEnd(rest bool) time.Time {
 	if rest {
 		return c.GetWorkDayStart().Add(c.WorkDayDuration + c.RestDuration)
@@ -100,6 +122,18 @@ func (c *config) GetWorkDayEnd(rest bool) time.Time {
 
 func (c *config) GetWorkDayDuration() time.Duration {
 	return c.WorkDayDuration
+}
+
+func (c *config) SetWorkDayDuration(duration time.Duration) {
+	c.WorkDayDuration = duration
+}
+
+func (c *config) GetRestDuration() time.Duration {
+	return c.RestDuration
+}
+
+func (c *config) SetRestDuration(duration time.Duration) {
+	c.RestDuration = duration
 }
 
 func (c *config) GetRefreshInterval() time.Duration {
@@ -114,6 +148,10 @@ func (c *config) GetTruncateDuration() time.Duration {
 		return 1 * time.Minute
 	}
 	return c.TruncateInterval
+}
+
+func (c *config) SetTruncateDuration(duration time.Duration) {
+	c.TruncateInterval = duration
 }
 
 func (c *config) String() string {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -12,6 +13,7 @@ import (
 	"github.com/getlantern/systray"
 	"github.com/ismtabo/time-left/config"
 	"github.com/ismtabo/time-left/icon"
+	"github.com/zserge/lorca"
 )
 
 const (
@@ -19,15 +21,17 @@ const (
 	RestTimeFormat = "🍽 Rest: %s"
 	EndTimeFormat  = "%s End: %s"
 	ReloadText     = "🔄 Reload"
+	ConfigText     = "⚙️ Config"
 	QuitText       = "❌ Quit"
 )
 
 var (
-	conf    config.Config
-	rest    bool
-	done    chan bool
-	quit    chan bool
-	running bool
+	conf         config.Config
+	rest         bool
+	done         chan bool
+	quit         chan bool
+	running      bool
+	activeConfig lorca.UI
 )
 
 func main() {
@@ -66,6 +70,7 @@ func onReady() {
 	mTimeLeft := systray.AddMenuItem("Time left", "Time left")
 	mRest := systray.AddMenuItemCheckbox(fmt.Sprintf(RestTimeFormat, "disabled"), "Rest: click to toggle", false)
 	mEnd := systray.AddMenuItem(getEndOfWorkdayTitle(endOfWorkDay), "End of the work day")
+	mConfig := systray.AddMenuItem(ConfigText, "Open config")
 	mReload := systray.AddMenuItem(ReloadText, "Reload config")
 	systray.AddSeparator()
 	mQuit := systray.AddMenuItem(QuitText, "Quit the whole app")
@@ -92,11 +97,122 @@ func onReady() {
 				}
 			case <-mReload.ClickedCh:
 				reloadConfig(mEnd, mTimeLeft)
+			case <-mConfig.ClickedCh:
+				go openConfig(func() {
+					reloadConfig(mEnd, mTimeLeft)
+				})
 			}
 		}
 	}()
 
 	reloadConfig(mEnd, mTimeLeft)
+}
+
+type onConfigSavedCallback func()
+
+func openConfig(callback onConfigSavedCallback) {
+	if activeConfig != nil {
+		log.Println("Config UI is already open")
+		return
+	}
+	ui, err := lorca.New("", "", 860, 480)
+	if err != nil {
+		log.Printf("Failed to open config UI: %v", err)
+		return
+	}
+	activeConfig = ui
+	defer func() {
+		activeConfig = nil
+		ui.Close()
+	}()
+	ui.Bind("handleSaveConfig", func(configData string) {
+		var data struct {
+			WorkdayStart    string `json:"workdayStart"`
+			WorkdayDuration string `json:"workdayDuration"`
+			RestDuration    string `json:"restDuration"`
+		}
+		if err := json.Unmarshal([]byte(configData), &data); err != nil {
+			log.Printf("Failed to parse config data: %v", err)
+			return
+		}
+		workdayStart, err := time.Parse("15:04", data.WorkdayStart)
+		if err != nil {
+			log.Printf("Failed to parse workday start time: %v", err)
+			return
+		}
+		workdayDuration, err := time.ParseDuration(data.WorkdayDuration)
+		if err != nil {
+			log.Printf("Failed to parse workday duration: %v", err)
+			return
+		}
+		restDuration, err := time.ParseDuration(data.RestDuration)
+		if err != nil {
+			log.Printf("Failed to parse rest duration: %v", err)
+			return
+		}
+		conf.SetWorkDayStart(workdayStart)
+		conf.SetWorkDayDuration(workdayDuration)
+		conf.SetRestDuration(restDuration)
+		if err := conf.Save(); err != nil {
+			log.Printf("Failed to save config: %v", err)
+			return
+		}
+		if callback != nil {
+			callback()
+		}
+	})
+	ui.Load("data:text/html," + (`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Time Left Config</title>
+		<style>
+				body {
+						font-family: Arial, sans-serif;
+						padding: 20px;
+				}
+				label {
+						display: block;
+						margin-top: 10px;
+				}
+				input[type="text"] {
+						width: 100%;
+						padding: 8px;
+						box-sizing: border-box;
+				}
+				button {
+						margin-top: 20px;
+						padding: 10px 20px;
+						font-size: 16px;
+				}
+		</style>
+</head>
+<body>
+		<h1>Time Left Config</h1>
+		<form id="configForm" action="javascript:void(0);" onsubmit="saveConfig()">
+		<label for="workdayStart">Workday Start Time (HH:mm):</label>
+		<input type="text" id="workdayStart" value="` + conf.GetWorkDayStart().Format("15:04") + `">
+		<label for="workdayDuration">Workday Duration (e.g. 8h):</label>
+		<input type="text" id="workdayDuration" value="` + conf.GetWorkDayDuration().String() + `">
+		<label for="restDuration">Rest Duration (e.g. 1m, 30s):</label>
+		<input type="text" id="restDuration" value="` + conf.GetRestDuration().String() + `">
+		<button type="submit">Save</button>
+		</form>
+		<script>
+				function saveConfig() {
+						const data = document.getElementById('configForm');
+						const workdayStart = data.workdayStart.value;
+						const workdayDuration = data.workdayDuration.value;
+						const restDuration = data.restDuration.value;
+						handleSaveConfig(JSON.stringify({ workdayStart, workdayDuration, restDuration }));
+				}
+		</script>
+</body>
+</html>
+	`))
+	<-ui.Done()
 }
 
 func reloadConfig(mEnd *systray.MenuItem, mTimeLeft *systray.MenuItem) {
