@@ -65,6 +65,7 @@ go.work
 ### Target ###
 # Ignore build output, except on deploy
 target/
+dist/
 
 ### Taskfile ###
 # Ignore Taskfile cache
